@@ -2,8 +2,11 @@ import sys, os
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0,  os.path.join(thisdir, 'pycparser'))
+sys.path.insert(0,  os.path.join(thisdir, 'networkx-1.11'))
 
 from pycparser import c_parser, c_ast
+import networkx as nx
+#import matplotlib.pyplot as plt
 
 from cfg_nodes import CFGNodeType
 from cfg_nodes import CFGEntryNode
@@ -31,6 +34,7 @@ class CFGAstVisitor(object):
     def __init__(self):
         self._entry_nodes = []
         self._init_vars()
+	self._DG = nx.DiGraph()
 
     def _init_vars(self):
         self._current_func_name = None
@@ -50,7 +54,13 @@ class CFGAstVisitor(object):
             self._update_call()
             self._clean_graph()
 
+	#nx.draw(self._DG)
+	#print(self._DG.nodes())
+	#print(self._DG.edges())
         return self._get_entry_nodes()
+
+    def get_DG(self):
+        return self._DG
 
     ####### AST visit algorithm #######
 
@@ -94,8 +104,7 @@ class CFGAstVisitor(object):
         cond_node.add_ast_elem(n.cond, compound, index)
         self._add_new_node(cond_node)
         self._current_node = cond_node
-#CHANGED. False.
-        self._create_new_node = True
+        self._create_new_node = False
         self.visit(n.cond, compound, index) # a function call can be presented in condition
 
         # then
@@ -187,11 +196,16 @@ class CFGAstVisitor(object):
 
     def _add_new_node(self, new):
         # there is a previous node being updated
+	
         if isinstance(self._current_node, CFGNode):
+	    self._DG.add_node(self._current_node)
+            self._DG.add_node(new)
+	    self._DG.add_edge(self._current_node, new)
             self._current_node.add_child(new)
 
         if self._is_first_node:
             entry_node = CFGEntryNode(self._current_func_name, new)
+	    self._DG.add_node(entry_node)
             self._add_entry_node(entry_node)
             self._is_first_node = False
 
@@ -203,21 +217,33 @@ class CFGAstVisitor(object):
         # if-then or if-then-else stmt:
         #    last then node -> end if node
         if isinstance(iftrue_last_node, CFGNode):
+            self._DG.add_node(iftrue_last_node)
+	    self._DG.add_node(end_node)
+            self._DG.add_edge(iftrue_last_node, end_node)
             iftrue_last_node.add_child(end_node)
-
+	    
         # if-then stmt:
         #   if cond -> end if node
         if len(children) == 1:
+            self._DG.add_node(cond_node)
+            self._DG.add_node(end_node)
+            self._DG.add_edge(cond_node, end_node)
             cond_node.add_child(end_node)
 
         # if-then-else stmt:
         #   last else node -> end if node
         elif len(children) == 2 and isinstance(iffalse_last_node, CFGNode):
+            self._DG.add_node(iffalse_last_node)
+	    self._DG.add_node(end_node)
+            self._DG.add_edge(iffalse_last_node, end_node)
             iffalse_last_node.add_child(end_node)
 
     def _make_loop_cycle(self, cond, child, visited):
         visited[child] = True
         if child.get_children() == []:
+	    self._DG.add_node(child)
+	    self._DG.add_node(cond)
+            self._DG.add_edge(child, cond)
             child.add_child(cond)
         else:
             for c in child.get_children():
@@ -249,6 +275,10 @@ class CFGAstVisitor(object):
             # update reference node to the right entry node
             for entry in self._entry_nodes:
                 if n.get_call_func_name() == entry.get_func_name():
+		    #MIGHT NEED IF THERE ARE FUNCTION 
+		    #self._DG.add_node(n)
+	    	    #self._DG.add_node(entry)
+                    #self._DG.add_edge(n, entry)
                     n.set_refnode(entry)
                     break
 
@@ -303,6 +333,7 @@ class CFGAstVisitor(object):
         """
         for entry in self._entry_nodes:
             last_node = CFGNode(CFGNodeType.END)
+            self._DG.add_node(last_node)
             last_node.set_func_owner(entry.get_func_name())
             self._add_last_node_visit(entry.get_func_first_node(), last_node, {})
 
@@ -327,4 +358,7 @@ class CFGAstVisitor(object):
                 self._add_last_node_visit(child, last_node, visited)
 
         if n.get_type() != CFGNodeType.END and n.get_children() == []:
+            self._DG.add_node(n)
+	    self._DG.add_node(last_node)
+            self._DG.add_edge(n, last_node)
             n.add_child(last_node)

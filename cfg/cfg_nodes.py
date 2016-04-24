@@ -96,7 +96,14 @@ class CFGNode(object):
         self.compound = compound
         self.index = index
 	self.visit_number = -1
-	self.place_boundary = 0
+	self.place_boundary = False
+        self.count_list = []
+
+    def add_count(self, count, weight):
+        self.count_list.append((count,weight))
+
+    def get_counts(self):
+        return self.count_list
 
     def set_type(self, type):
         """ Set current node type

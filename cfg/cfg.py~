@@ -32,6 +32,7 @@ class CFG(object):
         self._filename = filename
         self._ast = None
         self._entry_nodes = []
+	self._DG = None
 
     def get_entry_nodes(self):
         """ Returns:
@@ -66,10 +67,14 @@ class CFG(object):
         # explore AST and make CFG
         ast_visitor = cfg_ast_visitor.CFGAstVisitor()
         self._entry_nodes = ast_visitor.make_cfg_from_ast(self._ast)
+	self._DG = ast_visitor.get_DG()
         self._compute_wcec_rwcec()
-	#CHANGED. REMOVED.
+#CHANGED. Removed original return and changed to return the AST.
         #return self._entry_nodes
 	return self._ast
+
+    def get_DG():
+        return self._DG
 
     def _compute_wcec_rwcec(self):
 	return
