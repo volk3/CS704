@@ -24,6 +24,7 @@ def cfg_visit(node, visited):
 
     # visit loop
     if node.get_type() == cfg_nodes.CFGNodeType.PSEUDO:
+        child = node.get_refnode()
         print('  node line %d child line %d'
                 % (node.get_start_line(), child.get_start_line()))
         cfg_visit(child, visited)
