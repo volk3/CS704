@@ -5,7 +5,7 @@ from cfg import cfg, cfg2graphml, cfg_cdvfs_generator
 thisdir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0,  os.path.join(thisdir, 'cfg/pycparser'))
 sys.path.insert(0,  os.path.join(thisdir, 'cfg'))
-sys.path.insert(0,  os.path.join(thisdir, 'cfg/networkx-1.11'))
+#sys.path.insert(0,  os.path.join(thisdir, 'cfg/networkx-1.11'))
 
 from cfg_nodes import CFGNodeType
 from cfg_nodes import CFGEntryNode
@@ -63,7 +63,7 @@ def avg_BFS(DG):
 def p_DFS(node, cur_list, DG):
     if(DG.out_degree(node) == 0):
 	cur_list.append(node)
-        yield cur_list
+        yield cur_list[:]
 	cur_list.pop()
     else:
 	cur_list.append(node)

@@ -2,7 +2,7 @@ import sys, os
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0,  os.path.join(thisdir, 'pycparser'))
-sys.path.insert(0,  os.path.join(thisdir, 'networkx-1.11'))
+#sys.path.insert(0,  os.path.join(thisdir, 'networkx-1.11'))
 
 from pycparser import c_parser, c_ast
 import networkx as nx
