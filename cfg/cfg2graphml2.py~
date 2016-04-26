@@ -156,68 +156,46 @@ class CFG2Graphml(object):
 	    if isinstance(entry, CFGEntryNode):
 	        self._process(entry.get_func_first_node(), num)
 
-    def _set_visit_nums(self, entry):
+    def set_visit_nums(self, entry):
 	Q = [entry]
 	visited = []
 	while not len(Q) is 0:
-	    deq = Q[0]
-            Q.remove(deq)
-	    visited.append(deq)
-	    if deq.get_type() == CFGNodeType.PSEUDO:
-                child = deq.get_refnode()
-		if child.get_visit_number() == 2:
-                    child.set_visit_number(1)
-                    Q.append(child)
-                elif child in visited:
-                    pass
-                else:
-                    Q.append(child)
-	    for child in deq.get_children():
-                if child.get_visit_number() == 2:
-                    child.set_visit_number(1)
-                    Q.append(child)
-                elif child in visited:
-                    pass
-                else:
-                    Q.append(child)
-            
+		deq = 
+
     def _process(self, entry, num):
 	nextList = []
 	curList = [[entry,0]]
-	repeat = 0
 	while not len(curList) is 0:
 	    deq = curList[0]
 	    curList.remove(deq)
             if deq[0].get_type() == CFGNodeType.PSEUDO:
                 child = deq[0].get_refnode()
+		if child.get_visit_number() == 1:
+                    pass
                 if child.get_place_boundary() == 1:
                     pass
                 else:
-		    if child.get_visit_number() == repeat and deq[1]+1 == num:
-                        pass
-		    else:
-                        child.set_visit_number(repeat)
-                        if deq[1]+1 == num:
-                            child.set_place_boundary(1)
-                            nextList.append([child,0])
-                        else:
-                            curList.append([child,deq[1]+1])
+                    child.set_visit_number(2)
+                    if deq[1]+1 == num:
+                        child.set_place_boundary(1)
+                        nextList.append([child,0])
+                    else:
+                        curList.append([child,deq[1]+1])
 	    for child in deq[0].get_children():
+                if child.get_visit_number() == 1:
+                    pass
                 if child.get_place_boundary() == 1:
                     pass
                 else:
-		    if child.get_visit_number() == repeat and deq[1]+1 == num:
-                        pass
-		    else:
-                        child.set_visit_number(repeat)
-                        if deq[1]+1 == num:
-                            child.set_place_boundary(1)
-                            nextList.append([child,0])
-                        else:
-                            curList.append([child,deq[1]+1])
+                    child.set_visit_number(2)
+                    if deq[1]+1 == num:
+                        child.set_place_boundary(1)
+                        nextList.append([child,0])
+                    else:
+                        curList.append([child,deq[1]+1])
             if len(curList) is 0:
-		repeat += 1
 		self._set_visit_nums(entry)
+                repeat = repeat + 1
                 curList = nextList
 	
 

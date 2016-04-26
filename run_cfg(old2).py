@@ -25,7 +25,7 @@ def run_cfg(filename):
     # create graphml
     graphml = cfg2graphml.CFG2Graphml()
     #graphml.add_boundaries(graph, file_name='', yed_output=True, 1)
-    graphml.make_graphml(graph, 1, file_name='', yed_output=True)
+    graphml.make_graphml(graph, 2, file_name='', yed_output=True)
 
     # generate DVFS-aware code
     cdvfs = cfg_cdvfs_generator.CFG_CDVFS()
@@ -39,34 +39,33 @@ def run_cfg(filename):
 #Assumes DAG.
 def avg_BFS(DG):
     nodes = nx.topological_sort(DG)
-    list_o_lists = [(0,0)]*len(nodes)
+    list_o_lists = [[]]*len(nodes)
     sources = [node for node, indegree in DG.in_degree(DG.nodes()).items() if indegree == 0]
     for source in sources:
-	list_o_lists[nodes.index(source)] = (1,1)
+	list_o_lists[nodes.index(source)] = list_o_lists[nodes.index(source)]+[(1,1)]
     total = 0
     denom = 0
     avgs = []
     for node in nodes:
-	node_total = 0
-        node_denom = 0
         for pred in DG.predecessors(node):
-            pair = list_o_lists[nodes.index(pred)]
-	    node_total += (pair[0]+1)*pair[1]
-	    node_denom += pair[1]
-            list_o_lists[nodes.index(node)] = (node_total/float(node_denom),node_denom)
+            for pair in list_o_lists[nodes.index(pred)]:
+                list_o_lists[nodes.index(node)] = list_o_lists[nodes.index(node)]+[(pair[0]+1,pair[1])]
         if(DG.out_degree(node) == 0):
-	    pair = list_o_lists[nodes.index(node)]
+            avgs.append(list_o_lists[nodes.index(node)][:])
+
+    for avg in avgs:
+        for pair in avg:
             total += pair[0]*pair[1]
-	    denom += pair[1]
+            denom += pair[1]
+
     return total/float(denom)
 
 def p_DFS(node, cur_list, DG):
     if(DG.out_degree(node) == 0):
-	cur_list.append(node)
         yield cur_list
     else:
         for child in DG.successors(node):
-	    cur_list.append(node)
+	    cur_list.append(child)
 	    for path in p_DFS(child, cur_list, DG):
                 yield path
 	    cur_list.pop()

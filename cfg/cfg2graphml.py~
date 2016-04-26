@@ -234,8 +234,8 @@ class CFG2Graphml(object):
         """
         if not isinstance(n, CFGNode): return
 #CHANGED. This is where the boundaries get added.
-	#if not n.compound is None and n.get_place_boundary() == 1:
-            #n.add_boundary()
+	if not n.compound is None and n.get_place_boundary() == 1:
+            n.add_boundary()
 
         # node is visited
         visited[n] = 'g%sn%s' % (fid, nid)

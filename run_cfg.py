@@ -25,7 +25,7 @@ def run_cfg(filename):
     # create graphml
     graphml = cfg2graphml.CFG2Graphml()
     #graphml.add_boundaries(graph, file_name='', yed_output=True, 1)
-    graphml.make_graphml(graph, 2, file_name='', yed_output=True)
+    graphml.make_graphml(graph, 1, file_name='', yed_output=True)
 
     # generate DVFS-aware code
     cdvfs = cfg_cdvfs_generator.CFG_CDVFS()
@@ -39,85 +39,44 @@ def run_cfg(filename):
 #Assumes DAG.
 def avg_BFS(DG):
     nodes = nx.topological_sort(DG)
+    list_o_lists = [(0,0)]*len(nodes)
     sources = [node for node, indegree in DG.in_degree(DG.nodes()).items() if indegree == 0]
     for source in sources:
-        source.add_count(1,1)
+	list_o_lists[nodes.index(source)] = (1,1)
     total = 0
     denom = 0
     avgs = []
     for node in nodes:
-        if node.get_place_boundary():
-            for pred in DG.predecessors(node):
-                for pair in pred.get_counts():
-                    node.add_count(pair[0]+2,pair[1])
-        else:
-            for pred in DG.predecessors(node):
-                for pair in pred.get_counts():
-                    node.add_count(pair[0]+1,pair[1])
-        if node.get_type() == CFGNodeType.END:
-            avgs.append(node.get_counts()[:])
-
-#DOESN'T WORK.
-#    for source in sources:
-#        visited = []
-#        Q = [source]
-#        source.add_count(1,1)
-#	while not len(Q) is 0:
-#	    node = Q[0]
-#            Q.remove(node)
-#            if node.get_type() == CFGNodeType.END:
-#                avgs.append(node.get_counts()[:])
-#            else:
-#                for succ in DG.successors(node):
-#                    print(node.get_counts())
-#                    for pair in node.get_counts():
-#                        print(pair)
-#                        succ.add_count(pair[0]+1, pair[1])
-#                    print(succ.get_counts())
-#                    if not succ in visited:
-#                        Q.append(succ)
-#			visited.append(succ)
-
-    for avg in avgs:
-        for pair in avg:
+	node_total = 0
+        node_denom = 0
+        for pred in DG.predecessors(node):
+            pair = list_o_lists[nodes.index(pred)]
+	    node_total += (pair[0]+1)*pair[1]
+	    node_denom += pair[1]
+            list_o_lists[nodes.index(node)] = (node_total/float(node_denom),node_denom)
+        if(DG.out_degree(node) == 0):
+	    pair = list_o_lists[nodes.index(node)]
             total += pair[0]*pair[1]
-            denom += pair[1]
-
+	    denom += pair[1]
     return total/float(denom)
 
-def p_DFS(F, p, node, pi, prob, t, DG):
-    if(node.get_place_boundary()):
-        new_prob = prob*F(p(1),pi)*F(p(2),pi+[None])
-        if(node.get_type() == CFGNodeType.END):
-            return [1-new_prob]
-        res = []
-        for child in DG.successors(node):
-            res.append(p_DFS(F, p, child, pi+[None]+[node], new_prob, 3, DG))
-        return max(res)
+def p_DFS(node, cur_list, DG):
+    if(DG.out_degree(node) == 0):
+	cur_list.append(node)
+        yield cur_list
+	cur_list.pop()
     else:
-        new_prob = prob*F(p(t),pi)
-        if(node.get_type() == CFGNodeType.END):
-            return [1-new_prob]
-        res = []
+	cur_list.append(node)
         for child in DG.successors(node):
-            res.append(p_DFS(F, p, child, pi+[node], new_prob, t+1, DG))
-        return max(res)
+	    for path in p_DFS(child, cur_list, DG):
+                yield path
+	cur_list.pop()
 
-def prob_DFS(F, p, DG):
+def prob_DFS(DG):
     sources = [node for node, indegree in DG.in_degree(DG.nodes()).items() if indegree == 0]
-    res = []
     for source in sources:
-        res.append(p_DFS(F, p, source, [], 1, 1, DG))
-    return max(res)[0]  
-
-def F(p, pi):
-    return 0.99*p
-
-def p(t):
-    prob = 0.99
-    for i in range(t-1):
-        prob *= 0.99
-    return prob
+	for path in p_DFS(source, [], DG):
+	    yield path
 
 if __name__ == '__main__':
 
@@ -126,4 +85,5 @@ if __name__ == '__main__':
     else:
         res = run_cfg(sys.argv[1])
         print(avg_BFS(res[2]))
-        print(prob_DFS(F, p, res[2]))
+        for element in prob_DFS(res[2]):
+            print(element)
