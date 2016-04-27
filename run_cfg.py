@@ -78,12 +78,28 @@ def prob_DFS(DG):
 	for path in p_DFS(source, [], DG):
 	    yield path
 
+def Dijkstras(DG):
+    nodes = nx.topological_sort(DG)
+    dist = [float('inf')]*len(nodes)
+    sources = [node for node, indegree in DG.in_degree(DG.nodes()).items() if indegree == 0]
+    for source in sources:
+	dist[nodes.index(source)] = 0
+    for node in nodes:
+        for child in DG.successors(node):
+            if dist[nodes.index(child)] > dist[nodes.index(node)]+DG[node][child]['weight']:
+                dist[nodes.index(child)] = dist[nodes.index(node)]+DG[node][child]['weight']
+    return (nodes, dist)
+
 if __name__ == '__main__':
 
     if len(sys.argv) < 2:
         print('Too few arguments')
     else:
         res = run_cfg(sys.argv[1])
-        print(avg_BFS(res[2]))
-        for element in prob_DFS(res[2]):
+	DG = nx.DiGraph()
+	for (u, v) in res[2].edges():
+	    DG.add_edge(u, v, weight=1)
+        print(avg_BFS(DG))
+        for element in prob_DFS(DG):
             print(element)
+	print(Dijkstras(DG))
