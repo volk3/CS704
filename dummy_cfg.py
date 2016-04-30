@@ -22,11 +22,12 @@ def make_edge_costs(from_node, to_node, live_vars):
 
         
 class FunctionGraph():
-    def __init__(self, f_entry_node):
+    def __init__(self, f_entry_node, function_map):
         self.graph = nx.DiGraph()
         self.back_map = {} #map backwards from a node to a previous insertion point
         self.boundaries = [] #boundary nodes
         self.insertion_points = [] #places to insert boundaries
+        self.function_map = function_map
                 
 
     #returns (start, end) nodes
@@ -44,10 +45,12 @@ class FunctionGraph():
                 curr_start, curr_end = self.handle_if(node, live_vars)
             elif node.node_type() == ast.loop_type:
                 curr_start, curr_end = self.handle_loop(node, live_vars)
-            elif node.node_type == ast.branch_free_type or node.node_type == ast.func_call_type or node.node_type == ast.boundary_type:
+            elif node.node_type == ast.func_call_type:
+                curr_start, curr_end = self.handle_function_call(node, live_vars)
+            elif node.node_type == ast.branch_free_type or  node.node_type == ast.boundary_type:
                 curr_start = node
                 curr_end = node
-                #TODO handle func_call separately
+                
                 
             self.graph.add_node(curr_start)
             if prev_end:
@@ -58,11 +61,20 @@ class FunctionGraph():
     def handle_loop(self, loop_node, live_vars):
         return self.handle_loop_unroll(loop_node, live_vars)
 
+    def handle_function_call(self, func_call_node, live_vars):
+        entry_node = self.function_map[func_call_node.name]
+        func_copy = entry_node.deep_copy()
+        #TODO: function prologue/epilogue costs
+        new_live_var_count = live_vars + entry_node.n_params
+        body_start, body_end = self.handle_node_list(func_copy.body, new_live_var_count)
+        return body_start, body_end
+
     def handle_loop_unroll(self, loop_node, live_vars):
         unroll_start = None
         curr_start = None
         curr_end = None
-        prev_end = None        
+        prev_end = None
+        
         for i in range(0, loop_node.iter_count):
             loop_copy = loop_node.deep_copy()
             curr_start, curr_end = self.handle_loop_linear(loop_copy, live_vars)
@@ -97,7 +109,7 @@ class FunctionGraph():
         return cond_start, exit_node
     
 
-    def add_edge_with_cost(self, from_node, to_node, cost, live_vars):
+    def add_edge_with_cost(self, from_node, to_node, cost):
         self.graph.add_edge(from_node, to_node, cost)
         
     def add_edge_make_cost(self, from_node, to_node, live_vars):
