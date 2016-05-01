@@ -52,7 +52,7 @@ class FunctionGraph():
                 curr_start, curr_end = self.handle_if(node, live_vars)
             elif node.node_type() == ast.loop_type:
                 curr_start, curr_end = self.handle_loop(node, live_vars)
-            elif node.node_type() == ast.branch_free_type or  node.node_type == ast.boundary_type or node.node_type == ast.func_call_type:
+            elif node.node_type() == ast.branch_free_type or  node.node_type() == ast.boundary_type or node.node_type == ast.func_call_type:
                 curr_start, curr_end = self.handle_linear(node, live_vars)
                 
             if prev_end:
@@ -67,6 +67,7 @@ class FunctionGraph():
     #generate loop gadget
     def handle_loop(self, loop_node, live_vars):
         return self.handle_loop_linear(loop_node, live_vars)
+    
         #return self.handle_loop_unroll(loop_node, live_vars)
 
     def expand_function_call(self, func_call_node, live_vars):
