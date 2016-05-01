@@ -6,7 +6,7 @@ class Program():
 
 entry_type = "Entry"
 branch_free_type = "Branch Free"
-if_type = "if"
+if_type = "If"
 boundary_type = "Task Boundary"
 loop_type = "Loop"
 func_call_type = "Func Call"
@@ -18,6 +18,15 @@ func_call_type = "Func Call"
 def list_deep_copy(to_copy):
     return [n.deep_copy() for n in to_copy]
 
+def pretty_print_list(lst, depth):
+    out_str = ""
+    for node in lst:       
+        out_str = out_str + node.pretty_print(depth)
+    return out_str
+
+def make_indent(depth):
+    return "  " * depth
+
 class EntryNode():
     def __init__(self, name, body, n_params):
         self.func_name = name
@@ -25,10 +34,16 @@ class EntryNode():
         self.n_params = n_params
 
     def node_type(self):
-        return "Entry"
+        return entry_type
 
     def deep_copy(self):
         return EntryNode(self.func_name, list_deep_copy(self.body), self.n_params)
+
+    def pretty_print(self, depth):
+        out_str = self.func_name + "(" + str(self.n_params) + "args ){\n"
+        out_str += pretty_print_list(self.body, depth + 1)
+        out_str += "}"
+        return out_str
 
 
 #represents a non-branching sequence of instructions
@@ -39,14 +54,18 @@ class branch_free_code():
         self.live_vars = 0
 
     def node_type(self):
-        return "Branch Free"
+        return branch_free_type
 
     def deep_copy(self):
         new_node = branch_free_code(self.n_instrs, self.success_prob)
         new_node.live_vars = self.live_vars
         return new_node
 
+    def pretty_print(self, depth):
+        return make_indent(depth) + "code: " + str(self.n_instrs) + " instrs, p: " + str(self.success_prob) + "\n"
 
+
+#TODO: make else optional.
 #cond is a list of branch_free_code and calls.
 #true_branch is a list of nodes
 #false_branch is a list of nodes
@@ -58,7 +77,7 @@ class if_node():
         self.live_vars = 0
 
     def node_type(self):
-        return "If"
+        return if_type
 
     def deep_copy(self):
         new_cond = list_deep_copy(self.cond)
@@ -67,7 +86,16 @@ class if_node():
         new_node = if_node(new_cond, new_true, new_false)
         new_node.live_vars = self.live_vars
         return new_node
- 
+
+    def pretty_print(self, depth):
+        out_str = make_indent(depth) + "if{\n"
+        out_str += pretty_print_list(self.cond, depth + 1)
+        out_str += make_indent(depth) + "}then{\n"
+        out_str += pretty_print_list(self.true_branch, depth + 1)
+        out_str += make_indent(depth) + "}else{\n"
+        out_str += pretty_print_list(self.false_branch, depth + 1)
+        out_str += make_indent(depth) + "}\n"
+        return out_str
 
 #represents a task boundary
 class boundary_node():
@@ -76,12 +104,15 @@ class boundary_node():
         self.live_vars = 0
         
     def node_type(self):
-        return "Task Boundary"
+        return boundary_type
 
     def deep_copy(self):
         new_node = boundary_node(self.id_info)
         new_node.live_vars = self.live_vars
         return new_node
+
+    def pretty_print(self, depth):
+        return make_indent(depth) + "BOUNDARY\n"
     
 #represents a loop
 #cond is a list of branch_free_code and calls
@@ -92,9 +123,11 @@ class loop_node():
         self.body = body
         self.iter_count = iter_count
         self.live_vars = 0
+        #TODO: set this
+        self.final_node = None #Points forward to last node in body. Set in CFG construction
 
     def node_type(self):
-        return "Loop"
+        return loop_type
 
     def deep_copy(self):
         new_cond = list_deep_copy(self.cond)
@@ -103,6 +136,13 @@ class loop_node():
         new_node.live_vars = self.live_vars
         return new_node
 
+    def pretty_print(self, depth):
+        out_str = make_indent(depth) + "while{\n"
+        out_str += pretty_print_list(self.cond, depth + 1)
+        out_str += make_indent(depth) + "}do{\n"
+        out_str += pretty_print_list(self.body, depth + 1)
+        out_str += make_indent(depth) + "}\n"
+        return out_str
 
 class func_call():
     def __init__(self, func_name):
@@ -110,9 +150,12 @@ class func_call():
         self.live_vars = 0
 
     def node_type(self):
-        return "Func Call"
+        return func_call_type
 
     def deep_copy(self):
         new_node = func_call(self.func_name)
         new_node.live_vars = self.live_vars
         return new_node
+
+    def pretty_print(self, depth):
+        return make_indent(depth) + "call: " + self.func_name + "\n"
