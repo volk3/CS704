@@ -1,6 +1,7 @@
 #Builds a DAG version of CFG
 import dummy_ast as ast
 import networkx as nx
+import matplotlib.pyplot as plt
 
 instructions_key = "instrs"
 probability_key = "prob"
@@ -8,6 +9,8 @@ nil_cost = {instructions_key : 0, probability_key : 0}
 
 #Just to ensure that if nodes have a single exit point
 class IfJoinNode():
+    def __init__(self, color = "#FF0000"):
+        self.color = color
     def node_type(self):
         return "If Join"
 
@@ -28,6 +31,7 @@ test_indentation = 0
         
 class FunctionGraph():
     def __init__(self, f_entry_node):
+        self.entry_node = f_entry_node
         self.graph = nx.DiGraph()
         self.back_map = {} #map backwards from a node to a previous insertion point
         self.boundaries = [] #boundary nodes
@@ -131,3 +135,16 @@ class FunctionGraph():
         
     def add_edge_make_cost(self, from_node, to_node, live_vars):
         self.graph.add_edge(from_node, to_node, make_edge_costs(from_node, to_node, live_vars))
+
+    def get_color_list(self):
+        return [self.get_node_color(node) for node in self.graph]
+
+    def get_node_color(self, node):
+        return node.color
+
+    def draw_and_display(self):
+        nx.nx_pydot.write_dot(self.graph, self.entry_node.func_name + 'graph.dot')
+        plt.title("Control Flow Graph")
+        pos = nx.nx_pydot.graphviz_layout(self.graph, prog='dot')
+        nx.draw(self.graph, pos, node_color = self.get_color_list())
+        plt.show()
