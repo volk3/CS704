@@ -74,7 +74,7 @@ class branch_free_code():
 #true_branch is a list of nodes
 #false_branch is a list of nodes
 class if_node():
-    def __init__(self, cond, true_branch, false_branch, color = "#FF0000"):
+    def __init__(self, cond, true_branch, false_branch, color = control_color):
         self.cond = cond
         self.true_branch = true_branch
         self.false_branch = false_branch
@@ -124,7 +124,7 @@ class boundary_node():
 #cond is a list of branch_free_code and calls
 #body is a list of nodes
 class loop_node():
-    def __init__(self, cond, body, iter_count, color = "#FF0000"):
+    def __init__(self, cond, body, iter_count, color = control_color):
         self.cond = cond
         self.body = body
         self.iter_count = iter_count
@@ -152,7 +152,7 @@ class loop_node():
         return out_str
 
 class func_call():
-    def __init__(self, func_name, color = "#FF0000"):
+    def __init__(self, func_name, color = control_color):
         self.func_name = func_name
         self.live_vars = 0
         self.color = color
