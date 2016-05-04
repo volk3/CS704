@@ -10,6 +10,8 @@ if_type = "If"
 boundary_type = "Task Boundary"
 loop_type = "Loop"
 func_call_type = "Func Call"
+
+control_color = "#F5F5F5"
 #Function entry.
 #the name of the function
 #the first node of the function
@@ -32,7 +34,7 @@ class EntryNode():
         self.func_name = name
         self.body = body
         self.n_params = n_params
-        self.color = color = "#FF0000"
+        self.color = color 
 
     def node_type(self):
         return entry_type
