@@ -10,6 +10,7 @@ instructions_key = "instrs"
 probability_key = "prob"
 nil_cost = {instructions_key : 0, probability_key : 0}
 if_join_type = "If Join"
+return_type = "Return"
 #Just to ensure that if nodes have a single exit point
 class IfJoinNode():
     def __init__(self, color = ast.control_color):
@@ -18,11 +19,20 @@ class IfJoinNode():
         return if_join_type
 
     def deep_copy(self):
-        return IfJoinNode()
+        return IfJoinNode(color = self.color)
+
+class ReturnNode():
+    def __init__(self, color = ast.control_color):
+        self.color = color
+
+    def node_type(self):
+        return return_type
+
+    def deep_copy(self):
+        return ReturnNode(color = self.color)
 
 class SimpleProgramGraph():
-    def __init__(self, program_ast):
-        
+    def __init__(self, program_ast):       
         self.main_entry = program_ast.main_entry
         assert self.main_entry
         self.fxn_graph = SimpleFunctionGraph(self.main_entry)
@@ -45,6 +55,8 @@ def make_edge_costs_dummy(from_node, to_node, live_vars):
 def make_edge_costs(from_node, to_node, live_vars, func_map = None):
     cost_dict = None
     if from_node.node_type() == if_join_type:
+        return {instructions_key: 0, probability_key: 0}
+    if from_node.node_type() == return_type:
         return {instructions_key: 0, probability_key: 0}
     if from_node.node_type() == ast.if_type:
         return {instructions_key: 0, probability_key: 0}
@@ -178,7 +190,10 @@ class ExpandedFunctionGraph():
         self.boundaries = [] #boundary nodes
         self.insertion_points = [] #places to insert boundaries
         #TODO: change how live_vars is handled.
-        self.initial, self.terminal = self.handle_node_list(f_entry_node.body, live_vars + f_entry_node.n_params, function_map, f_entry_node)
+        self.initial, body_end = self.handle_node_list(f_entry_node.body, live_vars + f_entry_node.n_params, function_map, f_entry_node)
+        self.terminal = ReturnNode()
+        self.graph.add_node(self.terminal)
+        self.add_edge_make_cost(body_end, self.terminal, live_vars, function_map)
 
     #returns (start, end) nodes
     #TODO: pass down function map

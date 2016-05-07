@@ -17,8 +17,8 @@ control_color = "#F5F5F5"
 #the first node of the function
 #the function body
 #the number of parameters to the function.
-def list_deep_copy(to_copy):
-    return [n.deep_copy() for n in to_copy]
+def list_deep_copy(to_copy, correspondence_map = None):
+    return [n.deep_copy(correspondence_map) for n in to_copy]
 
 def pretty_print_list(lst, depth):
     out_str = ""
@@ -39,8 +39,10 @@ class EntryNode():
     def node_type(self):
         return entry_type
 
-    def deep_copy(self):
-        return EntryNode(self.func_name, list_deep_copy(self.body), self.n_params, color = self.color)
+    def deep_copy(self, correspondence_map = None):
+        new_node = EntryNode(self.func_name, list_deep_copy(self.body, correspondence_map), self.n_params, color = self.color)
+        correspondence_map[new_node] = self
+        return new_node
 
     def pretty_print(self, depth):
         out_str = self.func_name + "(" + str(self.n_params) + "args ){\n"
@@ -60,9 +62,10 @@ class branch_free_code():
     def node_type(self):
         return branch_free_type
 
-    def deep_copy(self):
+    def deep_copy(self, correspondence_map = None):
         new_node = branch_free_code(self.n_instrs, self.success_prob, color = self.color)
         new_node.live_vars = self.live_vars
+        correspondence_map[new_node] = self
         return new_node
 
     def pretty_print(self, depth):
@@ -84,11 +87,12 @@ class if_node():
     def node_type(self):
         return if_type
 
-    def deep_copy(self):
-        new_cond = list_deep_copy(self.cond)
-        new_true = list_deep_copy(self.true_branch)
-        new_false = list_deep_copy(self.false_branch)
+    def deep_copy(self, correspondence_map = None):
+        new_cond = list_deep_copy(self.cond, correspondence_map)
+        new_true = list_deep_copy(self.true_branch, correspondence_map)
+        new_false = list_deep_copy(self.false_branch, correspondence_map)
         new_node = if_node(new_cond, new_true, new_false, color = self.color)
+        correspondence_map[new_node] = self
         new_node.live_vars = self.live_vars
         return new_node
 
@@ -112,9 +116,10 @@ class boundary_node():
     def node_type(self):
         return boundary_type
 
-    def deep_copy(self):
+    def deep_copy(self, correspondence_map = None):
         new_node = boundary_node(self.id_info, color = self.color)
         new_node.live_vars = self.live_vars
+        correspondence_map[new_node] = self 
         return new_node
 
     def pretty_print(self, depth):
@@ -136,10 +141,11 @@ class loop_node():
     def node_type(self):
         return loop_type
 
-    def deep_copy(self):
-        new_cond = list_deep_copy(self.cond)
-        new_body = list_deep_copy(self.body)
+    def deep_copy(self, correspondence_map = None):
+        new_cond = list_deep_copy(self.cond, correspondence_map)
+        new_body = list_deep_copy(self.body, correspondence_map)
         new_node = loop_node(new_cond, new_body, self.iter_count, color = self.color)
+        correspondence_map[new_node] = self
         new_node.live_vars = self.live_vars
         return new_node
 
@@ -160,7 +166,7 @@ class func_call():
     def node_type(self):
         return func_call_type
 
-    def deep_copy(self):
+    def deep_copy(self, correspondence_map = None):
         new_node = func_call(self.func_name, color = self.color)
         new_node.live_vars = self.live_vars
         return new_node
